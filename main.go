@@ -56,9 +56,9 @@ type ServerAuth struct {
 }
 
 // env
-var DOMAIN = "192.168.1.43"
+var DOMAIN = "52.58.76.202"
 var MPORT = "5555"
-var SERVER_ADDRESS = "http://192.168.1.43:5555"
+var SERVER_ADDRESS = "http://52.58.76.202:5555"
 var COOKIE_NAME = "backmirror"
 var PROJ_ROOT = ""
 
