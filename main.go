@@ -61,6 +61,7 @@ var MPORT = "5555"
 var SERVER_ADDRESS = "http://52.58.76.202:5555"
 var COOKIE_NAME = "backmirror"
 var PROJ_ROOT = ""
+var SIGN_KEY = []byte("secret")
 
 // mem
 var users map[string]User
@@ -79,6 +80,8 @@ func init() {
 	PROJ_ROOT = ROOT
 	// Establish a pool of 5 Redis connections to the Redis server
 	POOL = newPool("localhost:6379")
+	// set JWT key
+	SIGN_KEY = []byte(os.Getenv("SIGN_KEY"))
 }
 
 func newPool(addr string) *redis.Pool {
@@ -247,9 +250,10 @@ func main() {
 	hub := newHub()
 	go hub.run()
 	r.HandleFunc("/", index)
+	r.HandleFunc("/login", login)
 	r.HandleFunc("/collab", collab)
+	r.HandleFunc("/register", register)
 	r.HandleFunc("/templates", templates)
-	r.HandleFunc("/login_callback", loginCallback)
 	r.HandleFunc("/history/{docHash}", docState)
 	r.HandleFunc("/collab_socket/{docHash}",
 		func(w http.ResponseWriter, r *http.Request) {
