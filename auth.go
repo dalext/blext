@@ -13,11 +13,7 @@ import (
 // gets you a token if you pass the right credentials
 func login(w http.ResponseWriter, r *http.Request) {
 	var err error
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-	w.Header().Set("Access-Control-Allow-Headers",
-		"Accept, 0, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
-	w.Header().Set("Content-Type", "application/json")
+	w = setCors(w)
 	if r.Method != "POST" {
 		http.Error(w, "Forbidden", 403)
 		return
@@ -54,11 +50,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 // is not registered already
 func register(w http.ResponseWriter, r *http.Request) {
 	var err error
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-	w.Header().Set("Access-Control-Allow-Headers",
-		"Accept, 0, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
-	w.Header().Set("Content-Type", "application/json")
+	w = setCors(w)
 	if r.Method != "POST" {
 		http.Error(w, "Forbidden", 403)
 		return
@@ -93,4 +85,13 @@ func register(w http.ResponseWriter, r *http.Request) {
 	tokenString, _ := token.SignedString(SIGN_KEY)
 	log.Println(email + " registered successfully")
 	w.Write([]byte(tokenString))
+}
+
+func setCors(w http.ResponseWriter) http.ResponseWriter {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+	w.Header().Set("Access-Control-Allow-Headers",
+		"Accept, 0, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+	w.Header().Set("Content-Type", "text")
+	return w
 }
