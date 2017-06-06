@@ -94,7 +94,10 @@ func newPool(addr string) *redis.Pool {
 
 // Checks the cookie in the request, if the cookie is not found or the value
 // is not found in the server memory map, then return 403. (TODO)
+//
+// Unused
 func collab(w http.ResponseWriter, r *http.Request) {
+	log.Println("Collab")
 	if r.Method != "GET" {
 		http.Error(w, "Method not allowed", 405)
 		return
@@ -129,20 +132,16 @@ func index(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("You shouldn't be here..."))
 }
 
-// Unused at the moment
+// Unused
 func templates(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
 		http.Error(w, "Method not allowed", 405)
 		return
 	}
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-	w.Header().Set("Access-Control-Allow-Headers",
-		"Accept, 0, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
-	w.Write([]byte("{\"doc\":{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"asd\"}]}]},\"users\":1,\"version\":3104,\"comments\":[],\"commentVersion\":39}"))
+	w = setCors(w)
 }
 
-// Unused at the moment
+// Unused
 func loginCallback(w http.ResponseWriter, r *http.Request) {
 	err := r.FormValue("error")
 	if err != "" {
@@ -182,26 +181,31 @@ func loginCallback(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, SERVER_ADDRESS+"/chat", 302)
 }
 
+var basicTemplate = []byte("{\"doc\":{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"asd\"}]}]},\"users\":1,\"version\":3104,\"comments\":[],\"commentVersion\":39}")
+
 // Set and Get a document instance
-func docState(w http.ResponseWriter, r *http.Request) {
+func docHistory(w http.ResponseWriter, r *http.Request) {
 	var err error
 	vars := mux.Vars(r)
 	conn := POOL.Get()
 	defer conn.Close()
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-	w.Header().Set("Access-Control-Allow-Headers",
-		"Accept, 0, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
-	w.Header().Set("Content-Type", "application/json")
+	w = setCors(w)
 	if r.Method == "GET" { // get doc instance
-		log.Println("Get request for: " + vars["docHash"])
+		log.Println("GET history for: " + vars["docHash"])
 		docJson, err := redis.Bytes(conn.Do("HGET", vars["docHash"], "json"))
+		// if document is not found
 		if err != nil {
+			// create new document for this hash
+			_, err = conn.Do("HSET", vars["docHash"], "json", basicTemplate)
+			if err != nil {
+				log.Println(err)
+			}
+			w.Write(basicTemplate)
 			log.Println(err)
+		} else {
+			w.Write(docJson)
 		}
-		w.Write(docJson)
-	}
-	if r.Method == "PUT" { // set doc instance
+	} else if r.Method == "PUT" { // set doc instance
 		log.Println("Put request for: " + vars["docHash"])
 		docJson, _ := ioutil.ReadAll(r.Body)
 		_, err = conn.Do("HSET", vars["docHash"], "json", docJson)
@@ -210,7 +214,6 @@ func docState(w http.ResponseWriter, r *http.Request) {
 		}
 		w.Write([]byte(docJson))
 	}
-	// docHash := vars["docHash"]
 	// hashed := fmt.Sprintf("%x", sha1.Sum([]byte(full_query)))
 }
 
@@ -254,7 +257,7 @@ func main() {
 	r.HandleFunc("/collab", collab)
 	r.HandleFunc("/register", register)
 	r.HandleFunc("/templates", templates)
-	r.HandleFunc("/history/{docHash}", docState)
+	r.HandleFunc("/history/{docHash}", docHistory)
 	r.HandleFunc("/collab_socket/{docHash}",
 		func(w http.ResponseWriter, r *http.Request) {
 			collabSockets(hub, w, r)

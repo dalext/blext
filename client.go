@@ -157,7 +157,9 @@ func collabSockets(hub *Hub, w http.ResponseWriter, r *http.Request) {
 		save:       &MessageChannel,
 	}
 	client.hub.register <- client
-	log.Println("Upgraded a client WebSocket")
+	log.Println("Upgraded " + vars["docHash"])
+
+	// 2 goroutines per client
 	go client.writePump()
 	go client.readPump()
 }
