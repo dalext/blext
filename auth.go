@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/garyburd/redigo/redis"
 	"golang.org/x/crypto/bcrypt"
@@ -15,7 +16,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 	var err error
 	w = setCors(w)
 	if r.Method != "POST" {
-		http.Error(w, "Forbidden", 403)
+		http.Error(w, fmt.Sprintf("{ \"error\": \"%s\" }", "Forbidden request"), 403)
 		return
 	}
 	conn := POOL.Get()
@@ -27,7 +28,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 		err = bcrypt.CompareHashAndPassword(password, []byte(r.FormValue("password")))
 		// if it doesn't match
 		if err != nil {
-			http.Error(w, "Wrong password", 401)
+			http.Error(w, fmt.Sprintf("{ \"error\": \"%s\" }", "Wrong password"), 401)
 			return
 		}
 		token := jwt.New(jwt.SigningMethodHS256)
@@ -37,11 +38,10 @@ func login(w http.ResponseWriter, r *http.Request) {
 		// 24 hour token
 		claims["exp"] = time.Now().Add(time.Hour * 24).Unix()
 		tokenString, _ := token.SignedString(SIGN_KEY)
-		log.Println(email + " logged in")
-		w.Write([]byte(tokenString))
+		w.Write([]byte(fmt.Sprintf("{ \"access_token\": \"%s\" }", tokenString)))
 	} else {
 		// email not found
-		http.Error(w, "Email not found", 401)
+		http.Error(w, fmt.Sprintf("{ \"error\": \"%s\" }", "Email not found"), 401)
 		return
 	}
 }
@@ -52,7 +52,7 @@ func register(w http.ResponseWriter, r *http.Request) {
 	var err error
 	w = setCors(w)
 	if r.Method != "POST" {
-		http.Error(w, "Forbidden", 403)
+		http.Error(w, fmt.Sprintf("{ \"error\": \"%s\" }", "Forbidden request"), 403)
 		return
 	}
 	conn := POOL.Get()
@@ -61,7 +61,7 @@ func register(w http.ResponseWriter, r *http.Request) {
 	// check if the user is already registered
 	exists, err := redis.Bool(conn.Do("EXISTS", email))
 	if exists {
-		w.Write([]byte("Email taken"))
+		w.Write([]byte(fmt.Sprintf("{ \"error\": \"%s\" }", "Email taken")))
 		return
 	}
 	// get password from the post request form value
@@ -83,8 +83,7 @@ func register(w http.ResponseWriter, r *http.Request) {
 	// 24 hour token
 	claims["exp"] = time.Now().Add(time.Hour * 24).Unix()
 	tokenString, _ := token.SignedString(SIGN_KEY)
-	log.Println(email + " registered successfully")
-	w.Write([]byte(tokenString))
+	w.Write([]byte(fmt.Sprintf("{ \"access_token\": \"%s\" }", tokenString)))
 }
 
 func setCors(w http.ResponseWriter) http.ResponseWriter {
@@ -92,6 +91,6 @@ func setCors(w http.ResponseWriter) http.ResponseWriter {
 	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
 	w.Header().Set("Access-Control-Allow-Headers",
 		"Accept, 0, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
-	w.Header().Set("Content-Type", "text")
+	w.Header().Set("Content-Type", "application/json")
 	return w
 }
