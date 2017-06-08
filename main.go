@@ -3,13 +3,10 @@ package main
 import (
 	"github.com/garyburd/redigo/redis"
 	"github.com/gorilla/mux"
-	"html/template"
-	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
 	"os"
-	"strings"
 	"time"
 )
 
@@ -92,157 +89,6 @@ func newPool(addr string) *redis.Pool {
 	}
 }
 
-// Checks the cookie in the request, if the cookie is not found or the value
-// is not found in the server memory map, then return 403. (TODO)
-//
-// Unused
-func collab(w http.ResponseWriter, r *http.Request) {
-	log.Println("Collab")
-	if r.Method != "GET" {
-		http.Error(w, "Method not allowed", 405)
-		return
-	}
-	conn := POOL.Get()
-	defer conn.Close()
-	// Doc instances, fix this
-	DocInstances, err := redis.Strings(conn.Do("SMEMBERS", "doc_hashes"))
-	if err != nil {
-		log.Println(err)
-	}
-	// sort.Strings(DocInstances)
-	// cookie, err := r.Cookie(COOKIE_NAME)
-	if err != nil {
-		log.Println(err)
-	}
-	template.Must(
-		template.New("collab.html").ParseFiles(
-			PROJ_ROOT+"/collab.html")).Execute(w, struct {
-		CookieName      string
-		ServerAddr      string
-		Username        string
-		CollabInstances []string
-	}{COOKIE_NAME, SERVER_ADDRESS, "Jimmy", DocInstances})
-}
-
-func index(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "GET" {
-		http.Error(w, "Method not allowed", 405)
-		return
-	}
-	w.Write([]byte("You shouldn't be here..."))
-}
-
-// Unused
-func templates(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "GET" {
-		http.Error(w, "Method not allowed", 405)
-		return
-	}
-	w = setCors(w)
-}
-
-// Unused
-func loginCallback(w http.ResponseWriter, r *http.Request) {
-	err := r.FormValue("error")
-	if err != "" {
-		log.Println(err)
-	}
-	user := &User{
-		Created:          1495185151,
-		Created_utc:      1495185151,
-		Has_mail:         true,
-		Id:               getRandomString(10),
-		Is_mod:           true,
-		Name:             "Timmy",
-		Level:            10,
-		Active:           true,
-		Activation_token: getRandomString(200),
-		Created_at:       "Fri May 19 09:13:53 UTC 2017",
-	}
-	if user.Name == "" {
-		http.Redirect(w, r, SERVER_ADDRESS+"/", 302)
-		return
-	}
-	clientIp := strings.Split(r.RemoteAddr, ":")[0]
-	AuthorizedIps = append(AuthorizedIps, clientIp)
-	user.IP = clientIp
-	// store reddit auth data in the map, Username -> RedditAuth data
-	users[user.Name] = *user
-	expire := time.Now().AddDate(0, 0, 1)
-	cookie := &http.Cookie{
-		Expires: expire,
-		MaxAge:  86400,
-		Name:    COOKIE_NAME,
-		Value:   user.Name,
-		Path:    "/",
-		Domain:  DOMAIN,
-	}
-	http.SetCookie(w, cookie)
-	http.Redirect(w, r, SERVER_ADDRESS+"/chat", 302)
-}
-
-var basicTemplate = []byte("{\"doc\":{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"asd\"}]}]},\"users\":1,\"version\":3104,\"comments\":[],\"commentVersion\":39}")
-
-// Set and Get a document instance
-func docHistory(w http.ResponseWriter, r *http.Request) {
-	var err error
-	vars := mux.Vars(r)
-	conn := POOL.Get()
-	defer conn.Close()
-	w = setCors(w)
-	if r.Method == "GET" { // get doc instance
-		log.Println("GET history for: " + vars["docHash"])
-		docJson, err := redis.Bytes(conn.Do("HGET", vars["docHash"], "json"))
-		// if document is not found
-		if err != nil {
-			// create new document for this hash
-			_, err = conn.Do("HSET", vars["docHash"], "json", basicTemplate)
-			if err != nil {
-				log.Println(err)
-			}
-			w.Write(basicTemplate)
-			log.Println(err)
-		} else {
-			w.Write(docJson)
-		}
-	} else if r.Method == "PUT" { // set doc instance
-		log.Println("Put request for: " + vars["docHash"])
-		docJson, _ := ioutil.ReadAll(r.Body)
-		_, err = conn.Do("HSET", vars["docHash"], "json", docJson)
-		if err != nil {
-			log.Println(err)
-		}
-		w.Write([]byte(docJson))
-	}
-	// hashed := fmt.Sprintf("%x", sha1.Sum([]byte(full_query)))
-}
-
-// Channel to save messages to the database
-func saveDocInstances(m *chan DBDocInstance) {
-	for {
-		message, ok := <-*m
-		if !ok {
-			log.Println("Error when trying to save")
-			return
-		}
-		saveDocInstance(&message)
-	}
-}
-
-func saveDocInstance(msg *DBDocInstance) {
-	var err error
-	conn := POOL.Get()
-	if err != nil {
-		log.Println(err)
-	}
-	log.Println("Got doc instance, saving")
-	defer conn.Close()
-	_, err = conn.Do("HSET", msg.DocHash, "json", msg.Json)
-	if err != nil {
-		log.Println(err)
-	}
-}
-
 func main() {
 	MessageChannel = make(chan DBDocInstance, 256)
 	// a goroutine for saving messages
@@ -252,12 +98,10 @@ func main() {
 	r := mux.NewRouter()
 	hub := newHub()
 	go hub.run()
-	r.HandleFunc("/", index)
 	r.HandleFunc("/login", login)
-	r.HandleFunc("/collab", collab)
 	r.HandleFunc("/register", register)
-	r.HandleFunc("/templates", templates)
 	r.HandleFunc("/history/{docHash}", docHistory)
+	r.HandleFunc("/instances/{emailHash}", clientInstances)
 	r.HandleFunc("/collab_socket/{docHash}",
 		func(w http.ResponseWriter, r *http.Request) {
 			collabSockets(hub, w, r)

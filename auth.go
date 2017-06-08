@@ -24,7 +24,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 	email := strings.ToLower(r.FormValue("email"))
 	password, err := redis.Bytes(conn.Do("GET", email))
 	if err == nil {
-		// compare passwords
+		// email found, compare passwords
 		err = bcrypt.CompareHashAndPassword(password, []byte(r.FormValue("password")))
 		// if it doesn't match
 		if err != nil {
