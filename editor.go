@@ -90,16 +90,18 @@ func saveDocInstance(msg *DBDocInstance) {
 //
 // accepts GET, POST, PUT and CORS preflight
 //
-// example:
-// Get all client's docs
+// Examples
+//
+// Get all clients docs
 // GET base/instances/eyJhbGciOiJIUzI1N...
 // returns => ["eyJ...", "zI1N..."]
+//
 // Add a client doc (new doc)
 // POST base/instances/eyJhbGciOiJIUzI1N...
 // returns => ["eyJ...", "zI1N..."]
 //
 // TODO: Avoid dupes by checking that the document hash is not already
-// in the list
+// in the list (can't have two docs with the same name)
 func clientInstances(w http.ResponseWriter, r *http.Request) {
 	w = setCors(w)
 	vars := mux.Vars(r)

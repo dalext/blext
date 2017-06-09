@@ -93,13 +93,17 @@ func main() {
 	MessageChannel = make(chan DBDocInstance, 256)
 	// a goroutine for saving messages
 	go saveDocInstances(&MessageChannel)
-	//for keeping track of users in memory
+	// for keeping track of users in memory
 	users = make(map[string]User)
 	r := mux.NewRouter()
 	hub := newHub()
 	go hub.run()
+	// auth
 	r.HandleFunc("/login", login)
 	r.HandleFunc("/register", register)
+	// files
+	r.HandleFunc("/files/{type}", upload)
+	// editor
 	r.HandleFunc("/history/{docHash}", docHistory)
 	r.HandleFunc("/instances/{emailHash}", clientInstances)
 	r.HandleFunc("/collab_socket/{docHash}",
@@ -107,6 +111,7 @@ func main() {
 			collabSockets(hub, w, r)
 		})
 	r.PathPrefix("/").Handler(http.StripPrefix("/", http.FileServer(http.Dir(PROJ_ROOT+"/icons"))))
+	// server
 	srv := &http.Server{
 		Handler:      r,
 		Addr:         ":" + MPORT,
