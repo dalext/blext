@@ -4,12 +4,15 @@ import (
 	// "crypto/sha1"
 	// "encoding/json"
 	"fmt"
+	"log"
 	// "github.com/garyburd/redigo/redis"
 	"github.com/gorilla/mux"
 	"io"
 	// "log"
+	"bytes"
 	"net/http"
 	"os"
+	"os/exec"
 )
 
 // Should respond with the URL for the uploaded document after being processed
@@ -46,5 +49,14 @@ func upload(w http.ResponseWriter, r *http.Request) {
 		defer f.Close()
 		// write file to empty file
 		io.Copy(f, file)
+		cmd := exec.Command("pandoc", "./test/"+r.FormValue("filename"),
+			"-s", "-o", "./test/"+r.FormValue("filename")+".pdf")
+		var out bytes.Buffer
+		cmd.Stdout = &out
+		err = cmd.Run()
+		if err != nil {
+			log.Println(err)
+		}
+		fmt.Printf("File converted")
 	}
 }
