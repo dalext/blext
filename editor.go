@@ -1,3 +1,7 @@
+// FIXME: Use or add UUID for document instances instead of base64 doc title
+// or add email, i.e. zbase32(email)/base64(doctitle), this will only have
+// duplicates for the same user, i.e. 2 documents with the same title
+
 package main
 
 import (
@@ -24,6 +28,7 @@ func templates(w http.ResponseWriter, r *http.Request) {
 var basicTemplate = []byte("{\"doc\":{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"Empty document\"}]}]},\"users\":1,\"version\":3104,\"comments\":[],\"commentVersion\":39}")
 
 // Set and Get a document instance
+//
 func docHistory(w http.ResponseWriter, r *http.Request) {
 	var err error
 	vars := mux.Vars(r)

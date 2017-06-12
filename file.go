@@ -62,7 +62,7 @@ func convert(w http.ResponseWriter, r *http.Request) {
 		// parse request body as multipart/form-data
 		r.ParseMultipartForm(32 << 20)
 		// read file from the form
-		file, handler, err := r.FormFile("file")
+		file, _, err := r.FormFile("file")
 		if err != nil {
 			fmt.Println(err)
 			return
@@ -70,7 +70,7 @@ func convert(w http.ResponseWriter, r *http.Request) {
 		defer file.Close()
 		// write to w, as %v, file handler header
 		// w is the http.ResponseWriter
-		fmt.Fprintf(w, "%v", handler.Header) // ??
+		// fmt.Fprintf(w, "%v", handler.Header) // ??
 		// log.Printf("%v", handler.Header)
 		// generate user folder path
 		// each user has a folder with the name as zbase32 email encoded
