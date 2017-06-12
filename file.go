@@ -68,11 +68,6 @@ func convert(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		defer file.Close()
-		// write to w, as %v, file handler header
-		// w is the http.ResponseWriter
-		// fmt.Fprintf(w, "%v", handler.Header) // ??
-		// log.Printf("%v", handler.Header)
-		// generate user folder path
 		// each user has a folder with the name as zbase32 email encoded
 		userFolderPath := PROJ_ROOT + "/users/" +
 			zbase32.EncodeToString([]byte(email)) + "/"
@@ -94,7 +89,7 @@ func convert(w http.ResponseWriter, r *http.Request) {
 		defer f.Close()
 		// save file
 		tempFileName := userFolderPath + filename + ".pdf"
-		resultFileName := userFolderPath + strings.Split(filename, ".")[0] + ".pdf"
+		resultFileName := strings.Split(filename, ".")[0] + ".pdf"
 		io.Copy(f, file)
 		// compose file conversion command
 		cmd := exec.Command("pandoc", userFolderPath+filename,
@@ -108,13 +103,13 @@ func convert(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		// rename file to the converted filetype
-		err = os.Rename(tempFileName, resultFileName)
+		err = os.Rename(tempFileName, userFolderPath+resultFileName)
 		if err != nil {
 			log.Println(err)
 			return
 		}
 		fmt.Printf("File converted!")
 		// respond with the filename as json
-		w.Write([]byte(fmt.Sprintf("{ \"filename\": \"%s\" }", filename)))
+		w.Write([]byte(fmt.Sprintf("{ \"filename\": \"%s\" }", resultFileName)))
 	}
 }
