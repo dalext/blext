@@ -102,7 +102,7 @@ func main() {
 	r.HandleFunc("/login", login)
 	r.HandleFunc("/register", register)
 	// files
-	r.HandleFunc("/files/{type}", upload)
+	r.HandleFunc("/convert/{type}", convert)
 	// editor
 	r.HandleFunc("/history/{docHash}", docHistory)
 	r.HandleFunc("/instances/{emailHash}", clientInstances)
