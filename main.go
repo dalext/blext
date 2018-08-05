@@ -55,7 +55,7 @@ type ServerAuth struct {
 
 // env
 var DOMAIN = "192.168.1.47"
-var MPORT = "5555"
+var MPORT = "6565"
 var SERVER_ADDRESS = "http://192.168.1.47:5555"
 var COOKIE_NAME = "dalext"
 var PROJ_ROOT = ""
