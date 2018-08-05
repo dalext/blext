@@ -1,13 +1,14 @@
 package main
 
 import (
-	"github.com/garyburd/redigo/redis"
-	"github.com/gorilla/mux"
 	"log"
 	"math/rand"
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/garyburd/redigo/redis"
+	"github.com/gorilla/mux"
 )
 
 const (
@@ -114,7 +115,7 @@ func main() {
 	// server
 	srv := &http.Server{
 		Handler:      r,
-		Addr:         ":" + MPORT,
+		Addr:         "127.0.0.1:" + MPORT,
 		WriteTimeout: 5 * time.Second,
 		ReadTimeout:  5 * time.Second,
 	}
